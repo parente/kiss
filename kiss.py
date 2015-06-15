@@ -1,10 +1,10 @@
 import click
 import requests
-import envoy
 import re
 import tempfile
 import atexit
 import shutil
+import subprocess
 
 class AnyKiss(object):
     def search(self): 
@@ -85,16 +85,20 @@ def run(user, seq=None):
         kiss = choose_kiss(kisses, 'Choose a kiss to run')
     else:
         kiss = kisses[0]
+    
     tmpdir = tempfile.mkdtemp()
     atexit.register(cleanup_tmpdir, tmpdir)
-    clone = envoy.run('git clone {} .'.format(kiss['git_pull_url']), cwd=tmpdir)
-    if clone.status_code > 0:
-        raise click.ClickException(clone.std_err)
-    envoy.run('chmod +x ./run', cwd=tmpdir)
-    result = envoy.run('./run', cwd=tmpdir)
-    if run.status_code > 0:
-        raise click.ClickException(result.std_err)
-    click.echo(result.std_out)
+
+    clone = subprocess.Popen(['git', 'clone', kiss['git_pull_url'], tmpdir], cwd=tmpdir)
+    if clone.wait() > 0:
+        raise click.ClickException('Failed to clone gist')
+    
+    chmod = subprocess.Popen(['chmod', '+x', './run'], cwd=tmpdir)
+    if chmod.wait() > 0:
+        raise click.ClickException('Failed to make run script executable')
+    
+    runner = subprocess.Popen(['./run'], cwd=tmpdir, universal_newlines=True)
+    runner.wait()
 
 @cli.command()
 @click.argument('seq', nargs=-1)
