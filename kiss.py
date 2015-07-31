@@ -190,7 +190,16 @@ def edit(user, seq):
     kisses = get_kisses(gists, seq)
     kiss = get_one_kiss(kisses, 'Choose a kiss to edit')
 
-    # TODO: edit
+    tmpdir = tempfile.mkdtemp()
+    atexit.register(cleanup_tmpdir, tmpdir)
+
+    clone = subprocess.Popen(['git', 'clone', kiss['git_pull_url'], tmpdir], cwd=tmpdir)
+    if clone.wait() > 0:
+        raise click.ClickException('Failed to clone gist')
+
+    click.echo('\nNote: Exit this shell to cleanup the temporary clone.')
+    runner = subprocess.Popen([os.getenv('SHELL', '/bin/bash')], cwd=tmpdir, universal_newlines=True)
+    runner.wait()
 
 @cli.command()
 @click.option('--user', help='GitHub username')
