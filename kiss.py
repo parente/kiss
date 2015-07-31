@@ -159,11 +159,19 @@ def show(user, seq):
     kiss = get_one_kiss(kisses, 'Choose a kiss to view')
 
     click.echo('Showing details for "{}"\n'.format(kiss['name']))
+    readme = None
+    run = None
     for filename in kiss['files']:
         if filename.startswith('README'):
             readme = requests.get(kiss['files'][filename]['raw_url'])
-            click.echo(click.wrap_text(readme.text, preserve_paragraphs=True))
-            break
+        elif filename == 'run':
+            run = requests.get(kiss['files'][filename]['raw_url'])
+        if readme is not None and run is not None: break
+
+    click.echo(click.wrap_text(readme.text, preserve_paragraphs=True))
+    click.echo()
+    click.echo(run.text)
+
     click.echo('\nIncludes: {}'.format(', '.join(kiss['files'])))
     click.echo('Created: {}'.format(kiss['created_at']))
     click.echo('Updated: {}'.format(kiss['updated_at']))
